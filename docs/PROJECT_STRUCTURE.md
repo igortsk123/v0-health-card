@@ -1,6 +1,6 @@
 # PROJECT_STRUCTURE.md
 # HealthCard — "Второе мнение"
-_Last updated: Workstream A — Foundation_
+_Last updated: Workstream B — Free Flow_
 
 ---
 
@@ -9,8 +9,9 @@ _Last updated: Workstream A — Foundation_
 | Route | File | Workstream | Status |
 |---|---|---|---|
 | `/` | `app/page.tsx` | A | Done |
-| `/upload` | `app/upload/page.tsx` | B | Stub |
-| `/result/free` | `app/result/free/page.tsx` | B | Stub |
+| `/upload` | `app/upload/page.tsx` | B | Done |
+| `/upload/parsing` | `app/upload/parsing/page.tsx` | B | Done |
+| `/result/free` | `app/result/free/page.tsx` | B | Done |
 | `/offer` | `app/offer/page.tsx` | C | Stub |
 | `/payment/processing` | `app/payment/processing/page.tsx` | C | Pending |
 | `/payment/success` | `app/payment/success/page.tsx` | C | Pending |
@@ -46,8 +47,8 @@ _Last updated: Workstream A — Foundation_
 |---|---|---|
 | `api.types.ts` | `ApiResponse<T>`, `LoadState`, `ApiError`, `ok()`, `fail()` | A |
 | `session.types.ts` | `Session`, `SessionStage`, `DEFAULT_SESSION` | A |
-| `upload.types.ts` | Upload DTOs | B (pending) |
-| `result.types.ts` | Result / marker DTOs | B (pending) |
+| `upload.types.ts` | Upload DTOs | B | Done |
+| `result.types.ts` | Result / marker DTOs | B | Done |
 | `payment.types.ts` | Payment DTOs | C (pending) |
 | `anamnesis.types.ts` | Question/answer DTOs | D+E (pending) |
 | `scenario.types.ts` | Scenario DTOs | F (pending) |
@@ -62,8 +63,8 @@ Switch between mock and real API with `NEXT_PUBLIC_USE_MOCK=true`.
 
 | File | Workstream | Status |
 |---|---|---|
-| `uploadService.ts` | B | Pending |
-| `resultService.ts` | B | Pending |
+| `uploadService.ts` | B | Done |
+| `resultService.ts` | B | Done |
 | `paymentService.ts` | C | Pending |
 | `anamnesisService.ts` | D+E | Pending |
 | `scenarioService.ts` | F | Pending |
@@ -77,8 +78,8 @@ Russian-language realistic payloads. Each mock simulates 500–1500ms async dela
 
 | File | Workstream | Status |
 |---|---|---|
-| `upload.mock.ts` | B | Pending |
-| `result.mock.ts` | B | Pending |
+| `upload.mock.ts` | B | Done |
+| `result.mock.ts` | B | Done |
 | `payment.mock.ts` | C | Pending |
 | `anamnesis.mock.ts` | D+E | Pending |
 | `scenario.mock.ts` | F | Pending |
@@ -86,7 +87,36 @@ Russian-language realistic payloads. Each mock simulates 500–1500ms async dela
 
 ---
 
-## Lib (`lib/`)
+## Upload Components (`components/upload/`)
+
+Added in Workstream B.
+
+| File | Purpose | Lines |
+|---|---|---|
+| `FileUploadZone.tsx` | Drag-and-drop + tap file input with client-side MIME/size validation | ~114 |
+| `FilePreviewCard.tsx` | Selected file name, size, type badge + remove button | ~61 |
+
+---
+
+## Result Components (`components/result/`)
+
+Added in Workstream B.
+
+| File | Purpose | Lines |
+|---|---|---|
+| `ParsingProgress.tsx` | Animated waiting screen shown during polling | ~49 |
+| `ResultSummaryBanner.tsx` | Summary card: total/free markers, analysis date | ~58 |
+| `ResultMarkerCard.tsx` | Single marker: value, reference range, status badge, informational note | ~62 |
+| `ResultMarkerList.tsx` | Renders list of `ResultMarkerCard`s or `EmptyState` | ~38 |
+| `LockedMarkersTeaser.tsx` | Upsell block listing locked marker count + CTA to `/offer` | ~41 |
+
+---
+
+## API Contracts
+
+Full endpoint specs in `docs/api-contracts.md`.
+
+---
 
 | File | Purpose |
 |---|---|
