@@ -32,22 +32,23 @@ export default function OfferPage() {
   const router = useRouter()
   const { session, setSession } = useSession()
 
-  const [uploadId, setUploadId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
-  // SSR-safe: read session only on client
+  // SSR-safe: read session only on client; write stage on arrival
   useEffect(() => {
-    setUploadId(session.uploadId)
     setHydrated(true)
-  }, [session.uploadId])
+    if (session.stage === 'free_result') {
+      setSession({ stage: 'offer' })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps — intentional: run once on mount
 
   async function handlePay() {
-    if (isLoading || !uploadId) return
+    if (isLoading || !session.uploadId) return
     setIsLoading(true)
     setError(null)
-    const result = await createPaymentSession(uploadId, PAYMENT_AMOUNT_RUB)
+    const result = await createPaymentSession(session.uploadId, PAYMENT_AMOUNT_RUB)
     if (result.error || !result.data) {
       setError(result.error ?? 'Не удалось создать сессию оплаты')
       setIsLoading(false)
@@ -59,7 +60,8 @@ export default function OfferPage() {
 
   if (!hydrated) return null
 
-  if (!uploadId) {
+  // Guard: must have completed free result step to access offer
+  if (!session.uploadId || (session.stage !== 'free_result' && session.stage !== 'offer')) {
     return (
       <AppShell>
         <main className="flex flex-col gap-6 px-4 py-10 sm:px-6 max-w-2xl mx-auto w-full">
@@ -111,9 +113,7 @@ export default function OfferPage() {
 
         <CtaGroup
           primary={{
-            label: isLoading
-              ? 'Подождите…'
-              : `Оплатить ${PAYMENT_AMOUNT_RUB} ₽`,
+            label: isLoading ? 'Подождите…' : `Оплатить ${PAYMENT_AMOUNT_RUB} ₽`,
             onClick: handlePay,
             disabled: isLoading,
           }}

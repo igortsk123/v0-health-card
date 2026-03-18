@@ -200,6 +200,359 @@ _Added: Workstream D — Life Anamnesis_
 
 ---
 
+---
+
+## POST /api/anamnesis/illness/start
+
+_Added: Workstream E — Illness Anamnesis_
+
+**Purpose:** Begin an illness-anamnesis session after life-anamnesis is complete.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789",
+  "lifeAnamnesisId": "life_session_xyz789"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "question": {
+    "id": "ia_q0",
+    "text": "Что вас беспокоит в первую очередь?",
+    "hint": "Опишите главную жалобу как можно точнее.",
+    "input": { "type": "text", "placeholder": "Например: боль в правом боку…" }
+  },
+  "progress": { "currentStep": 1, "estimatedTotal": 10 }
+}
+```
+
+**TypeScript DTOs:** `StartAnamnesisResponseDTO` in `types/anamnesis.types.ts`
+**Service:** `services/anamnesisService.ts → startIllnessAnamnesis()`
+**Mock:** `mocks/anamnesis.mock.ts → mockStartIllnessAnamnesis()` — 800ms delay, resets step and answer cache
+
+---
+
+## POST /api/anamnesis/illness/answer
+
+_Added: Workstream E — Illness Anamnesis_
+
+**Purpose:** Submit an answer to the current illness-anamnesis question.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789",
+  "questionId": "ia_q0",
+  "value": "боль в правом боку"
+}
+```
+
+**Response `200` — mid-flow:** same shape as life-anamnesis answer (no `redFlag`).
+
+**Response `200` — final answer (`question === null`):**
+```json
+{
+  "question": null,
+  "progress": { "currentStep": 10, "estimatedTotal": 10 },
+  "illnessAnamnesisId": "ill_session_xyz789",
+  "redFlag": {
+    "flagged": true,
+    "urgencyLevel": "watch",
+    "reason": "Симптомы существенно влияют на повседневную жизнь"
+  }
+}
+```
+
+**`urgencyLevel` enum:** `"none"` | `"watch"` | `"urgent"`
+
+**Client behaviour on `question === null`:**
+- If `redFlag.flagged === true`: show `WarningBlock`, display "Продолжить" CTA
+- After user confirms (or no red flag): call `setSession({ illnessAnamnesisId, stage: 'scenarios' })` and navigate to `/scenarios`
+
+**TypeScript DTOs:** `IllnessAnswerResponseDTO`, `RedFlagDTO` in `types/anamnesis.types.ts`
+**Service:** `services/anamnesisService.ts → answerIllnessQuestion()`
+**Mock:** `mocks/anamnesis.mock.ts → mockAnswerIllnessQuestion()` — 1000ms delay, red-flag triggered when severity answer is 'Существенно'
+
+---
+
+## POST /api/payment/create
+
+_Added: Workstream C — Payment Flow_
+
+**Purpose:** Create a payment session for the premium analysis.
+
+**Request body (`application/json`):**
+```json
+{
+  "uploadId": "upload_abc123",
+  "amount": 499
+}
+```
+
+**Response `200`:**
+```json
+{
+  "paymentId": "pay_xyz789",
+  "uploadId": "upload_abc123",
+  "amount": 499,
+  "status": "pending",
+  "createdAt": "2024-03-15T09:45:00.000Z"
+}
+```
+
+**TypeScript DTOs:** `PaymentSessionDTO` in `types/payment.types.ts`
+**Service:** `services/paymentService.ts → createPaymentSession()`
+**Mock:** `mocks/payment.mock.ts → mockCreatePaymentSession()` — 800ms delay
+
+---
+
+## GET /api/payment/status?paymentId=:id
+
+_Added: Workstream C — Payment Flow_
+
+**Purpose:** Poll payment status. Called repeatedly until status is not 'processing'.
+
+**Response `200`:**
+```json
+{
+  "paymentId": "pay_xyz789",
+  "status": "success",
+  "updatedAt": "2024-03-15T09:46:30.000Z"
+}
+```
+
+**`status` enum:** `"pending"` | `"processing"` | `"success"` | `"failed"` | `"expired"`
+
+**Client behaviour:**
+- Polling interval: 3000ms, timeout: 30s
+- On `success` → `setSession({ stage: 'life_anamnesis' })` → navigate to `/payment/success`
+- On `failed` / `expired` → show `ErrorState`
+
+**TypeScript DTOs:** `PaymentStatusDTO` in `types/payment.types.ts`
+**Service:** `services/paymentService.ts → pollPaymentStatus()`
+**Mock:** `mocks/payment.mock.ts → mockPollPaymentStatus()` — returns 'success' after 2000ms
+
+---
+
+## POST /api/payment/confirm
+
+_Added: Workstream C — Payment Flow_
+
+**Purpose:** Confirm payment completion (called after polling resolves as 'success').
+
+**Request body (`application/json`):**
+```json
+{ "paymentId": "pay_xyz789" }
+```
+
+**Response `200`:**
+```json
+{
+  "paymentId": "pay_xyz789",
+  "status": "success",
+  "confirmedAt": "2024-03-15T09:46:35.000Z"
+}
+```
+
+**TypeScript DTOs:** `PaymentConfirmDTO` in `types/payment.types.ts`
+**Service:** `services/paymentService.ts → confirmPayment()`
+**Mock:** `mocks/payment.mock.ts → mockConfirmPayment()` — 500ms delay
+
+---
+
+## POST /api/scenarios/generate
+
+_Added: Workstream F — Scenario Generation_
+
+**Purpose:** Trigger scenario generation based on session + illness anamnesis data.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789",
+  "illnessAnamnesisId": "ill_session_xyz789"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "generationId": "gen_abc001",
+  "status": "generating"
+}
+```
+
+**TypeScript DTOs:** `GenerateScenariosRequest`, `GenerateScenariosResponse` in `types/scenario.types.ts`
+**Service:** `services/scenarioService.ts → generateScenarios()`
+**Mock:** `mocks/scenario.mock.ts → mockGenerateScenarios()` — 1500ms delay
+
+---
+
+## GET /api/scenarios/status?generationId=:id
+
+_Added: Workstream F — Scenario Generation_
+
+**Purpose:** Poll scenario generation status.
+
+**Response `200`:**
+```json
+{
+  "generationId": "gen_abc001",
+  "status": "ready"
+}
+```
+
+**`status` enum:** `"generating"` | `"ready"` | `"failed"`
+
+**Polling strategy:** interval 3000ms, timeout 60s. On `ready` → call `GET /api/scenarios`.
+
+**TypeScript DTOs:** `PollScenariosResponse` in `types/scenario.types.ts`
+**Service:** `services/scenarioService.ts → pollScenarios()`
+**Mock:** `mocks/scenario.mock.ts → mockPollScenarios()` — first call 'generating', second 'ready'
+
+---
+
+## GET /api/scenarios?generationId=:id
+
+_Added: Workstream F — Scenario Generation_
+
+**Purpose:** Fetch the completed scenario list.
+
+**Response `200`:**
+```json
+{
+  "generationId": "gen_abc001",
+  "scenarios": [
+    {
+      "id": "scenario_anemia",
+      "title": "Возможная железодефицитная анемия",
+      "summary": "Выявленные изменения могут быть связаны с недостатком железа…",
+      "relatedMarkers": ["Гемоглобин", "Эритроциты", "MCV"],
+      "probability": "high"
+    }
+  ],
+  "generatedAt": "2024-03-15T09:47:00.000Z"
+}
+```
+
+**`probability` enum:** `"high"` | `"medium"` | `"low"`
+
+**Medical wording rules for `summary`:**
+- Always informational: "могут быть связаны", "вероятный сценарий", "стоит обсудить с врачом"
+- Never diagnostic claims
+
+**TypeScript DTOs:** `GetScenariosResponse`, `Scenario` in `types/scenario.types.ts`
+**Service:** `services/scenarioService.ts → getScenarios()`
+**Mock:** `mocks/scenario.mock.ts → mockGetScenarios()` — 800ms delay, 3 scenarios
+
+---
+
+## POST /api/roadmap/generate
+
+_Added: Workstream G — Roadmap Generation_
+
+**Purpose:** Trigger roadmap generation for a selected scenario.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789",
+  "scenarioId": "scenario_anemia"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "roadmapId": "roadmap_001",
+  "status": "generating"
+}
+```
+
+**TypeScript DTOs:** `GenerateRoadmapRequest`, `GenerateRoadmapResponse` in `types/roadmap.types.ts`
+**Service:** `services/roadmapService.ts → generateRoadmap()`
+**Mock:** `mocks/roadmap.mock.ts → mockGenerateRoadmap()` — 1500ms delay
+
+---
+
+## GET /api/roadmap/status?roadmapId=:id
+
+_Added: Workstream G — Roadmap Generation_
+
+**Purpose:** Poll roadmap generation status.
+
+**Response `200`:**
+```json
+{ "roadmapId": "roadmap_001", "status": "ready" }
+```
+
+**`status` enum:** `"generating"` | `"ready"` | `"failed"`
+
+**Polling strategy:** interval 4000ms, timeout 60s. On `ready` → call `GET /api/roadmap`.
+
+**TypeScript DTOs:** `PollRoadmapResponse` in `types/roadmap.types.ts`
+**Service:** `services/roadmapService.ts → pollRoadmap()`
+**Mock:** `mocks/roadmap.mock.ts → mockPollRoadmap()` — first call 'generating', second 'ready'
+
+---
+
+## GET /api/roadmap?roadmapId=:id
+
+_Added: Workstream G — Roadmap Generation_
+
+**Purpose:** Fetch the completed roadmap with all steps.
+
+**Response `200`:**
+```json
+{
+  "roadmapId": "roadmap_001",
+  "scenarioId": "scenario_anemia",
+  "scenarioTitle": "Возможная железодефицитная анемия",
+  "summary": "На основании выявленных отклонений составлен информационный план…",
+  "steps": [
+    {
+      "id": "step_ferritin",
+      "category": "analysis",
+      "title": "Анализ на ферритин и сывороточное железо",
+      "description": "Позволяет оценить запасы железа…",
+      "priority": "high",
+      "timeframe": "в течение 1–2 недель"
+    }
+  ],
+  "generatedAt": "2024-03-15T09:48:00.000Z",
+  "pdfUrl": null
+}
+```
+
+**`category` enum:** `"analysis"` | `"specialist"` | `"lifestyle"` | `"monitoring"` | `"questions"`
+**`priority` enum:** `"high"` | `"normal"` | `"low"`
+
+**TypeScript DTOs:** `RoadmapResponse`, `RoadmapStep` in `types/roadmap.types.ts`
+**Service:** `services/roadmapService.ts → getRoadmap()`
+**Mock:** `mocks/roadmap.mock.ts → mockGetRoadmap()` — 800ms delay, 6 steps across 5 categories
+
+---
+
+## GET /api/roadmap/pdf?roadmapId=:id
+
+_Added: Workstream G — Roadmap Generation_
+
+**Purpose:** Get PDF download URL for the roadmap. Returns `'#'` stub until PDF generation is implemented.
+
+**Response `200`:**
+```json
+{ "pdfUrl": "https://cdn.example.com/roadmaps/roadmap_001.pdf" }
+```
+
+**TypeScript DTOs:** `GetRoadmapPdfResponse` in `types/roadmap.types.ts`
+**Service:** `services/roadmapService.ts → getRoadmapPdf()`
+**Mock:** `mocks/roadmap.mock.ts → mockGetRoadmapPdf()` — 500ms delay, returns `'#'`
+
+---
+
 ## Error envelope (all endpoints)
 
 All errors return the `ApiResponse<T>` shape with `data: null`:
