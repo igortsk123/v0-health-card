@@ -1,3 +1,5 @@
+'use client'
+
 // components/result/LockedMarkersTeaser.tsx
 // Upsell block shown when lockedCount > 0 on /result/free.
 // Wording is informational only — does not claim what locked markers contain diagnostically.

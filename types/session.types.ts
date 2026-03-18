@@ -12,6 +12,7 @@ export type SessionStage =
   | 'life_anamnesis'
   | 'illness_anamnesis'
   | 'scenarios'
+  | 'scenario_selected'
   | 'roadmap'
 
 export interface Session {
