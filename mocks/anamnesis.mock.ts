@@ -1,9 +1,13 @@
 // mocks/anamnesis.mock.ts
 // Life-anamnesis mock for Workstream D.
+// Illness-anamnesis mock for Workstream E.
 // mockStartLifeAnamnesis: 800ms delay, returns question 0.
 // mockAnswerLifeQuestion: 1000ms delay, advances through 10 questions.
 //   On step 10 (after final answer) returns { question: null, anamnesisId }.
-// Per-session step index is tracked in a module-level Map for isolation.
+// mockStartIllnessAnamnesis: 800ms delay, returns illness question 0.
+// mockAnswerIllnessQuestion: 1000ms delay, advances through 10 questions.
+//   On step 10 returns { question: null, illnessAnamnesisId, redFlag }.
+// Per-session step indices are tracked in separate module-level Maps.
 // TODO: remove when real anamnesis API is ready.
 
 import type { ApiResponse } from '@/types/api.types'
@@ -12,6 +16,8 @@ import type {
   AnamnesisQuestion,
   StartAnamnesisResponseDTO,
   AnswerAnamnesisResponseDTO,
+  IllnessAnswerResponseDTO,
+  RedFlagDTO,
 } from '@/types/anamnesis.types'
 
 const START_DELAY_MS = 800
@@ -168,5 +174,159 @@ export async function mockAnswerLifeQuestion(
   return ok<AnswerAnamnesisResponseDTO>({
     question: QUESTION_BANK[nextStep],
     progress: { currentStep: nextStep + 1, estimatedTotal: TOTAL_STEPS },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Illness-anamnesis mock — Workstream E
+// ---------------------------------------------------------------------------
+
+const ILLNESS_TOTAL_STEPS = 10
+
+/**
+ * 10-question illness anamnesis bank.
+ * Questions cover chief complaint, onset, dynamics, severity, accompanying
+ * symptoms, prior consultations, current treatment, and triggers.
+ * Backend AI will determine the actual question sequence; this bank is mock-only.
+ */
+const ILLNESS_QUESTION_BANK: AnamnesisQuestion[] = [
+  {
+    id: 'ia_q0',
+    text: 'Что вас беспокоит в первую очередь?',
+    hint: 'Опишите главную жалобу как можно точнее.',
+    input: { type: 'text', placeholder: 'Например: боль в правом боку, усталость…' },
+  },
+  {
+    id: 'ia_q1',
+    text: 'Как давно появились симптомы?',
+    input: {
+      type: 'single',
+      options: ['Несколько дней', 'Около недели', 'Несколько недель', 'Более месяца'],
+    },
+  },
+  {
+    id: 'ia_q2',
+    text: 'Как изменились симптомы со временем?',
+    input: {
+      type: 'single',
+      options: ['Нарастают', 'Стабильны', 'Уменьшаются', 'Волнообразно'],
+    },
+  },
+  {
+    id: 'ia_q3',
+    text: 'Насколько симптомы мешают повседневной жизни?',
+    input: {
+      type: 'single',
+      options: ['Незначительно', 'Умеренно', 'Существенно'],
+    },
+  },
+  {
+    id: 'ia_q4',
+    text: 'Есть ли сопутствующие симптомы?',
+    input: { type: 'boolean' },
+  },
+  {
+    id: 'ia_q5',
+    text: 'Опишите сопутствующие симптомы.',
+    hint: 'Перечислите всё, что вы заметили помимо основной жалобы.',
+    input: { type: 'text', placeholder: 'Например: слабость, тошнота, головная боль…' },
+  },
+  {
+    id: 'ia_q6',
+    text: 'Обращались ли вы уже к врачу по этому поводу?',
+    input: { type: 'boolean' },
+  },
+  {
+    id: 'ia_q7',
+    text: 'Что сказал врач / какое лечение назначено?',
+    hint: 'Если диагноза нет — опишите рекомендации.',
+    input: { type: 'text', placeholder: 'Например: назначили УЗИ, рекомендовали диету…' },
+  },
+  {
+    id: 'ia_q8',
+    text: 'Принимаете ли что-то для облегчения симптомов?',
+    input: { type: 'boolean' },
+  },
+  {
+    id: 'ia_q9',
+    text: 'Что помогает или ухудшает состояние?',
+    hint: 'Например: еда, физическая нагрузка, положение тела, время суток.',
+    input: { type: 'text', placeholder: 'Опишите, что замечаете…' },
+  },
+]
+
+/** Per-session step index for illness anamnesis — separate from life-anamnesis map. */
+const illnessSessionStepMap = new Map<string, number>()
+
+function getIllnessStep(sessionId: string): number {
+  return illnessSessionStepMap.get(sessionId) ?? 0
+}
+
+function advanceIllnessStep(sessionId: string): number {
+  const next = getIllnessStep(sessionId) + 1
+  illnessSessionStepMap.set(sessionId, next)
+  return next
+}
+
+/**
+ * Stored answers per session so we can evaluate red-flag logic at completion.
+ * Key: `${sessionId}:${questionId}`, Value: submitted answer value.
+ */
+const illnessAnswerCache = new Map<string, string | string[] | boolean | number>()
+
+export async function mockStartIllnessAnamnesis(
+  sessionId: string,
+  _lifeAnamnesisId: string | null,
+): Promise<ApiResponse<StartAnamnesisResponseDTO>> {
+  await delay(START_DELAY_MS)
+  // Reset step and answer cache for this session so re-mounts start fresh
+  illnessSessionStepMap.set(sessionId, 0)
+  // Clear previous cached answers for this session
+  for (const key of illnessAnswerCache.keys()) {
+    if (key.startsWith(`${sessionId}:`)) {
+      illnessAnswerCache.delete(key)
+    }
+  }
+  return ok<StartAnamnesisResponseDTO>({
+    question: ILLNESS_QUESTION_BANK[0],
+    progress: { currentStep: 1, estimatedTotal: ILLNESS_TOTAL_STEPS },
+  })
+}
+
+export async function mockAnswerIllnessQuestion(
+  sessionId: string,
+  questionId: string,
+  value: string | string[] | boolean | number,
+): Promise<ApiResponse<IllnessAnswerResponseDTO>> {
+  await delay(ANSWER_DELAY_MS)
+
+  // Cache the answer for red-flag evaluation
+  illnessAnswerCache.set(`${sessionId}:${questionId}`, value)
+
+  const nextStep = advanceIllnessStep(sessionId)
+
+  if (nextStep >= ILLNESS_TOTAL_STEPS) {
+    // All questions answered — evaluate red flag and return completion signal
+    const severityAnswer = illnessAnswerCache.get(`${sessionId}:ia_q3`)
+    const redFlag: RedFlagDTO =
+      severityAnswer === 'Существенно'
+        ? {
+            flagged: true,
+            urgencyLevel: 'watch',
+            reason: 'Симптомы существенно влияют на повседневную жизнь',
+          }
+        : { flagged: false, urgencyLevel: 'none' }
+
+    return ok<IllnessAnswerResponseDTO>({
+      question: null,
+      progress: { currentStep: ILLNESS_TOTAL_STEPS, estimatedTotal: ILLNESS_TOTAL_STEPS },
+      illnessAnamnesisId: `mock_ill_${sessionId}`,
+      redFlag,
+    })
+  }
+
+  return ok<IllnessAnswerResponseDTO>({
+    question: ILLNESS_QUESTION_BANK[nextStep],
+    progress: { currentStep: nextStep + 1, estimatedTotal: ILLNESS_TOTAL_STEPS },
   })
 }
