@@ -1,6 +1,6 @@
 # PROJECT_STRUCTURE.md
 # HealthCard — "Второе мнение"
-_Last updated: Workstream B — Free Flow_
+_Last updated: Workstream H — Integration QA_
 
 ---
 
@@ -11,17 +11,17 @@ _Last updated: Workstream B — Free Flow_
 | `/` | `app/page.tsx` | A | Done |
 | `/upload` | `app/upload/page.tsx` | B | Done |
 | `/upload/parsing` | `app/upload/parsing/page.tsx` | B | Done |
-| `/result/free` | `app/result/free/page.tsx` | B | Done |
-| `/offer` | `app/offer/page.tsx` | C | Stub |
-| `/payment/processing` | `app/payment/processing/page.tsx` | C | Pending |
-| `/payment/success` | `app/payment/success/page.tsx` | C | Pending |
-| `/payment/error` | `app/payment/error/page.tsx` | C | Pending |
-| `/anamnesis/life` | `app/anamnesis/life/page.tsx` | D | Pending |
-| `/anamnesis/illness` | `app/anamnesis/illness/page.tsx` | E | Pending |
-| `/scenarios` | `app/scenarios/page.tsx` | F | Pending |
-| `/scenarios/[id]` | `app/scenarios/[id]/page.tsx` | F | Pending |
-| `/roadmap` | `app/roadmap/page.tsx` | G | Pending |
-| `/roadmap/ready` | `app/roadmap/ready/page.tsx` | G | Pending |
+| `/result/free` | `app/result/free/page.tsx` | B+H | Done — session write added (H) |
+| `/offer` | `app/offer/page.tsx` | C+H | Done — guard fixed to stage check (H) |
+| `/payment/processing` | `app/payment/processing/page.tsx` | C | Done |
+| `/payment/success` | `app/payment/success/page.tsx` | C | Done |
+| `/payment/error` | `app/payment/error/page.tsx` | C | Done |
+| `/anamnesis/life` | `app/anamnesis/life/page.tsx` | D | Done |
+| `/anamnesis/illness` | `app/anamnesis/illness/page.tsx` | E | Done |
+| `/scenarios` | `app/scenarios/page.tsx` | F+H | Done — full implementation (H) |
+| `/scenarios/[id]` | `app/scenarios/[id]/page.tsx` | F+H | Done — created (H) |
+| `/roadmap` | `app/roadmap/page.tsx` | G | Done |
+| `/roadmap/ready` | `app/roadmap/ready/page.tsx` | G | Done |
 
 ---
 
@@ -45,14 +45,14 @@ _Last updated: Workstream B — Free Flow_
 
 | File | Contents | Workstream |
 |---|---|---|
-| `api.types.ts` | `ApiResponse<T>`, `LoadState`, `ApiError`, `ok()`, `fail()` | A |
-| `session.types.ts` | `Session`, `SessionStage`, `DEFAULT_SESSION` | A |
+| `api.types.ts` | `ApiResponse<T>`, `LoadState`, `ApiError`, `ok()`, `fail()` | A | Done |
+| `session.types.ts` | `Session`, `SessionStage`, `DEFAULT_SESSION` | A | Done |
 | `upload.types.ts` | Upload DTOs | B | Done |
 | `result.types.ts` | Result / marker DTOs | B | Done |
-| `payment.types.ts` | Payment DTOs | C (pending) |
-| `anamnesis.types.ts` | Question/answer DTOs | D+E (pending) |
-| `scenario.types.ts` | Scenario DTOs | F (pending) |
-| `roadmap.types.ts` | Roadmap / PDF DTOs | G (pending) |
+| `payment.types.ts` | Payment DTOs | C | Done |
+| `anamnesis.types.ts` | Question/answer DTOs | D+E | Done |
+| `scenario.types.ts` | Scenario DTOs | F+H | Done — created (H) |
+| `roadmap.types.ts` | Roadmap / PDF DTOs | G | Done |
 
 ---
 
@@ -65,10 +65,10 @@ Switch between mock and real API with `NEXT_PUBLIC_USE_MOCK=true`.
 |---|---|---|
 | `uploadService.ts` | B | Done |
 | `resultService.ts` | B | Done |
-| `paymentService.ts` | C | Pending |
-| `anamnesisService.ts` | D+E | Pending |
-| `scenarioService.ts` | F | Pending |
-| `roadmapService.ts` | G | Pending |
+| `paymentService.ts` | C | Done |
+| `anamnesisService.ts` | D+E | Done |
+| `scenarioService.ts` | F+H | Done — created (H) |
+| `roadmapService.ts` | G | Done |
 
 ---
 
@@ -80,10 +80,20 @@ Russian-language realistic payloads. Each mock simulates 500–1500ms async dela
 |---|---|---|
 | `upload.mock.ts` | B | Done |
 | `result.mock.ts` | B | Done |
-| `payment.mock.ts` | C | Pending |
-| `anamnesis.mock.ts` | D+E | Pending |
-| `scenario.mock.ts` | F | Pending |
-| `roadmap.mock.ts` | G | Pending |
+| `payment.mock.ts` | C | Done |
+| `anamnesis.mock.ts` | D+E | Done |
+| `scenario.mock.ts` | F+H | Done — created (H) |
+| `roadmap.mock.ts` | G | Done |
+
+---
+
+## Scenarios Components (`components/scenarios/`)
+
+Added in Workstream H.
+
+| File | Purpose | Lines |
+|---|---|---|
+| `ScenarioCard.tsx` | Single scenario card: title, probability badge, summary, related markers. Links to `/scenarios/[id]`. | ~75 |
 
 ---
 

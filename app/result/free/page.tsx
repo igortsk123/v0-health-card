@@ -23,7 +23,7 @@ type PageState = 'loading' | 'success' | 'error'
 
 export default function FreeResultPage() {
   const router = useRouter()
-  const { session } = useSession()
+  const { session, setSession } = useSession()
 
   const [pageState, setPageState] = useState<PageState>('loading')
   const [result, setResult] = useState<FreeResultResponse | null>(null)
@@ -42,6 +42,7 @@ export default function FreeResultPage() {
     }
 
     setResult(res.data)
+    setSession({ stage: 'free_result' })
     setPageState('success')
   }, [])
 
