@@ -1,5 +1,5 @@
 // types/anamnesis.types.ts
-// Life-anamnesis and illness-anamnesis DTOs for Workstream D.
+// Life-anamnesis and illness-anamnesis DTOs for Workstreams D and E.
 // TODO: align field names with real API when backend is wired.
 
 // ---------------------------------------------------------------------------
@@ -82,4 +82,29 @@ export interface AnswerAnamnesisResponseDTO {
   progress: AnamnesisProgressDTO
   /** Populated only on the final answer (question === null). */
   anamnesisId?: string
+}
+
+// ---------------------------------------------------------------------------
+// Illness-anamnesis — Workstream E additions
+// ---------------------------------------------------------------------------
+
+/**
+ * Red-flag evaluation returned on illness-anamnesis completion.
+ * Never blocks navigation — informational only.
+ */
+export interface RedFlagDTO {
+  flagged: boolean
+  urgencyLevel: 'none' | 'watch' | 'urgent'
+  reason?: string
+}
+
+/**
+ * Extended response shape for illness-anamnesis answer calls.
+ * On completion (question === null) also carries redFlag and illnessAnamnesisId.
+ */
+export interface IllnessAnswerResponseDTO extends AnswerAnamnesisResponseDTO {
+  /** Present only when question === null (completion). */
+  redFlag?: RedFlagDTO
+  /** Present only when question === null (completion). */
+  illnessAnamnesisId?: string
 }

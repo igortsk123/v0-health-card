@@ -20,6 +20,7 @@ export interface Session {
   uploadId: string | null
   paymentId: string | null
   lifeAnamnesisId: string | null
+  illnessAnamnesisId: string | null
   selectedScenarioId: string | null
 }
 
@@ -29,5 +30,6 @@ export const DEFAULT_SESSION: Session = {
   uploadId: null,
   paymentId: null,
   lifeAnamnesisId: null,
+  illnessAnamnesisId: null,
   selectedScenarioId: null,
 }
