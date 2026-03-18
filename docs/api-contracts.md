@@ -110,6 +110,96 @@ uploadId: string
 
 ---
 
+---
+
+## POST /api/anamnesis/life/start
+
+_Added: Workstream D — Life Anamnesis_
+
+**Purpose:** Begin a life-anamnesis session. Returns the first question and initial progress.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "question": {
+    "id": "la_q0",
+    "text": "Есть ли у вас хронические заболевания?",
+    "hint": null,
+    "input": { "type": "boolean" }
+  },
+  "progress": { "currentStep": 1, "estimatedTotal": 10 }
+}
+```
+
+**`input.type` enum:** `"boolean"` | `"single"` | `"multi"` | `"text"` | `"number"`
+
+**TypeScript DTOs:** `AnamnesisQuestion`, `AnamnesisProgressDTO`, `StartAnamnesisResponseDTO` in `types/anamnesis.types.ts`
+**Service:** `services/anamnesisService.ts → startLifeAnamnesis()`
+**Mock:** `mocks/anamnesis.mock.ts → mockStartLifeAnamnesis()` — 800ms delay, resets step index for session
+
+---
+
+## POST /api/anamnesis/life/answer
+
+_Added: Workstream D — Life Anamnesis_
+
+**Purpose:** Submit an answer to the current question. Returns the next question or null on completion.
+
+**Request body (`application/json`):**
+```json
+{
+  "sessionId": "session_xyz789",
+  "questionId": "la_q0",
+  "value": true
+}
+```
+
+`value` type depends on `question.input.type`:
+- `boolean` → `true | false`
+- `single` → `string` (one of `options`)
+- `multi` → `string[]` (subset of `options`)
+- `text` → `string`
+- `number` → `number`
+
+**Response `200` — mid-flow:**
+```json
+{
+  "question": { "id": "la_q1", "text": "Какие именно?", "input": { "type": "text" } },
+  "progress": { "currentStep": 2, "estimatedTotal": 10 }
+}
+```
+
+**Response `200` — final answer (`question === null`):**
+```json
+{
+  "question": null,
+  "progress": { "currentStep": 10, "estimatedTotal": 10 },
+  "anamnesisId": "life_session_xyz789"
+}
+```
+
+**Client behaviour on `question === null`:**
+- Call `setSession({ lifeAnamnesisId, stage: 'illness_anamnesis' })`
+- Navigate to `/anamnesis/illness`
+
+**Error responses:**
+- `400` — missing or invalid fields
+- `404` — sessionId not found
+- `500` — internal server error
+
+**TypeScript DTOs:** `AnamnesisAnswer`, `AnswerAnamnesisResponseDTO` in `types/anamnesis.types.ts`
+**Service:** `services/anamnesisService.ts → answerLifeQuestion()`
+**Mock:** `mocks/anamnesis.mock.ts → mockAnswerLifeQuestion()` — 1000ms delay, 10-question sequence
+
+---
+
 ## Error envelope (all endpoints)
 
 All errors return the `ApiResponse<T>` shape with `data: null`:
