@@ -12,7 +12,9 @@ export type SessionStage =
   | 'life_anamnesis'
   | 'illness_anamnesis'
   | 'scenarios'
+  | 'scenario_selected'
   | 'roadmap'
+  | 'roadmap_ready'
 
 export interface Session {
   sessionId: string | null
@@ -22,6 +24,7 @@ export interface Session {
   lifeAnamnesisId: string | null
   illnessAnamnesisId: string | null
   selectedScenarioId: string | null
+  roadmapId: string | null
 }
 
 export const DEFAULT_SESSION: Session = {
@@ -32,4 +35,5 @@ export const DEFAULT_SESSION: Session = {
   lifeAnamnesisId: null,
   illnessAnamnesisId: null,
   selectedScenarioId: null,
+  roadmapId: null,
 }
