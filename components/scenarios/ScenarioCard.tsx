@@ -1,3 +1,5 @@
+'use client'
+
 // components/scenarios/ScenarioCard.tsx
 // Scenario selection card for Workstream F.
 // Shows title, short description, urgency badge, confidence note, and "Подробнее" button.

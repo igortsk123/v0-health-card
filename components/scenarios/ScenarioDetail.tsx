@@ -1,3 +1,5 @@
+'use client'
+
 // components/scenarios/ScenarioDetail.tsx
 // Full scenario detail view for Workstream F.
 // Renders all 7 sections with conditional rendering for optional fields.
