@@ -19,6 +19,7 @@ export interface Session {
   stage: SessionStage
   uploadId: string | null
   paymentId: string | null
+  lifeAnamnesisId: string | null
   selectedScenarioId: string | null
 }
 
@@ -27,5 +28,6 @@ export const DEFAULT_SESSION: Session = {
   stage: 'idle',
   uploadId: null,
   paymentId: null,
+  lifeAnamnesisId: null,
   selectedScenarioId: null,
 }

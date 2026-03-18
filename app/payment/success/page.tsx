@@ -81,7 +81,7 @@ export default function PaymentSuccessPage() {
         <CtaGroup
           primary={{
             label: 'Начать опрос',
-            href: '/anamnesis',
+            href: '/anamnesis/life',
           }}
           secondary={{
             label: 'Вернуться к расшифровке',
